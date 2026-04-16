@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Water, Land & Weather — Four Corners Monitoring Initiative</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Source+Serif+4:ital,wght@0,300;0,400;1,300&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --clay:    #8B3A1A;
+    --sand:    #C8A96E;
+    --sky:     #2E5F7A;
+    --sage:    #5A7A4A;
+    --bone:    #F2EBD9;
+    --night:   #14202B;
+    --turq:    #2AB5A0;
+    --rust:    #C4522A;
+    --gold:    #D4A442;
+    --smoke:   rgba(242,235,217,0.08);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: var(--night);
+    font-family: 'Source Serif 4', Georgia, serif;
+    color: var(--bone);
+  }
+
+  /* ── Geometric background pattern ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0;
+    background-image:
+      repeating-linear-gradient(60deg,  transparent, transparent 60px, rgba(200,169,110,0.04) 60px, rgba(200,169,110,0.04) 61px),
+      repeating-linear-gradient(120deg, transparent, transparent 60px, rgba(200,169,110,0.04) 60px, rgba(200,169,110,0.04) 61px),
+      repeating-linear-gradient(0deg,   transparent, transparent 60px, rgba(200,169,110,0.03) 60px, rgba(200,169,110,0.03) 61px);
+    pointer-events: none;
+  }
+
+  /* ── Slideshow container ── */
+  #deck {
+    position: relative; z-index: 1;
+    width: 100%; height: 100%;
+    display: grid;
+    place-items: center;
+  }
+
+  .slide {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 3rem 5vw;
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+    pointer-events: none;
+    text-align: center;
+  }
+
+  .slide.active {
+    opacity: 1; transform: translateY(0);
+    pointer-events: all;
+  }
+
+  /* ── Decorative strip across the top of every slide ── */
+  .slide::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 6px;
+    background: linear-gradient(90deg, var(--clay), var(--gold), var(--turq), var(--sage), var(--clay));
+  }
+
+  /* ── Slide type modifiers ── */
+  .slide.dark  { background: var(--night); }
+  .slide.earth { background: linear-gradient(155deg, #1A0F06 0%, #2A1508 60%, #14202B 100%); }
+  .slide.sky   { background: linear-gradient(155deg, #0D1F2D 0%, #14202B 100%); }
+  .slide.sage  { background: linear-gradient(155deg, #0C180A 0%, #14202B 100%); }
+
+  /* ── Typography ── */
+  .eyebrow {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(0.6rem, 1.2vw, 0.85rem);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 1rem;
+    opacity: 0.85;
+  }
+
+  h1 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: clamp(2rem, 5vw, 4rem);
+    font-weight: 700;
+    line-height: 1.15;
+    color: var(--bone);
+    margin-bottom: 1.2rem;
+    max-width: 860px;
+  }
+
+  h2 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: clamp(1.6rem, 3.5vw, 2.8rem);
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--bone);
+    margin-bottom: 1rem;
+    max-width: 800px;
+  }
+
+  .subtitle {
+    font-size: clamp(0.95rem, 1.8vw, 1.25rem);
+    font-weight: 300;
+    font-style: italic;
+    color: var(--sand);
+    max-width: 680px;
+    line-height: 1.7;
+    margin-bottom: 1.5rem;
+  }
+
+  .body-text {
+    font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+    font-weight: 300;
+    color: rgba(242,235,217,0.88);
+    max-width: 720px;
+    line-height: 1.85;
+  }
+
+  /* ── Card grid for bullet slides ── */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.2rem;
+    width: 100%;
+    max-width: 980px;
+    margin-top: 1.8rem;
+  }
+
+  .card {
+    background: rgba(242,235,217,0.06);
+    border: 1px solid rgba(200,169,110,0.2);
+    border-radius: 4px;
+    padding: 1.4rem 1.2rem;
+    text-align: left;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px; height: 100%;
+  }
+
+  .card.clay::after  { background: var(--clay); }
+  .card.turq::after  { background: var(--turq); }
+  .card.sage::after  { background: var(--sage); }
+  .card.gold::after  { background: var(--gold); }
+  .card.sky::after   { background: var(--sky);  }
+
+  .card-icon { font-size: 1.6rem; margin-bottom: 0.6rem; display: block; }
+
+  .card h3 {
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--sand);
+    margin-bottom: 0.55rem;
+  }
+
+  .card p {
+    font-size: 0.88rem;
+    font-weight: 300;
+    color: rgba(242,235,217,0.82);
+    line-height: 1.65;
+  }
+
+  /* ── Two-column contrast layout ── */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    max-width: 980px;
+    width: 100%;
+    margin-top: 1.8rem;
+    text-align: left;
+  }
+
+  .col-panel {
+    background: rgba(242,235,217,0.05);
+    border: 1px solid rgba(200,169,110,0.18);
+    border-radius: 4px;
+    padding: 1.6rem 1.4rem;
+  }
+
+  .col-panel .col-head {
+    font-family: 'Cinzel', serif;
+    font-size: 0.72rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 0.8rem;
+  }
+
+  .col-panel.traditional .col-head { color: var(--gold); }
+  .col-panel.science      .col-head { color: var(--turq); }
+
+  .col-panel ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  .col-panel ul li {
+    font-size: 0.9rem;
+    font-weight: 300;
+    color: rgba(242,235,217,0.85);
+    line-height: 1.65;
+    padding: 0.35rem 0;
+    padding-left: 1rem;
+    position: relative;
+  }
+
+  .col-panel ul li::before {
+    content: '—';
+    position: absolute; left: 0;
+    opacity: 0.5;
+  }
+
+  /* ── Centered divider ornament ── */
+  .ornament {
+    width: 80px; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    margin: 1.2rem auto;
+  }
+
+  /* ── Table slide ── */
+  .data-table {
+    width: 100%;
+    max-width: 900px;
+    border-collapse: collapse;
+    margin-top: 1.6rem;
+    font-size: clamp(0.75rem, 1.3vw, 0.92rem);
+  }
+
+  .data-table th {
+    font-family: 'Cinzel', serif;
+    font-size: 0.68rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--gold);
+    border-bottom: 1px solid rgba(200,169,110,0.3);
+    padding: 0.75rem 1rem;
+    text-align: left;
+  }
+
+  .data-table td {
+    padding: 0.75rem 1rem;
+    color: rgba(242,235,217,0.85);
+    font-weight: 300;
+    line-height: 1.55;
+    border-bottom: 1px solid rgba(200,169,110,0.08);
+    vertical-align: top;
+  }
+
+  .data-table tr:last-child td { border-bottom: none; }
+
+  .tag {
+    display: inline-block;
+    font-family: 'Cinzel', serif;
+    font-size: 0.6rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 0.2rem 0.55rem;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+
+  .tag.wash { background: rgba(196,82,42,0.25); color: var(--rust); }
+  .tag.river { background: rgba(46,95,122,0.3); color: #7ECAE0; }
+  .tag.spring { background: rgba(90,122,74,0.3); color: #A4C98A; }
+
+  /* ── Navigation ── */
+  #nav {
+    position: fixed;
+    bottom: 2rem; left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+  }
+
+  .nav-btn {
+    background: rgba(242,235,217,0.08);
+    border: 1px solid rgba(200,169,110,0.3);
+    color: var(--sand);
+    font-family: 'Cinzel', serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 0.55rem 1.4rem;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: background 0.25s, color 0.25s;
+  }
+
+  .nav-btn:hover { background: rgba(200,169,110,0.18); color: var(--bone); }
+  .nav-btn:disabled { opacity: 0.3; cursor: default; }
+
+  #slide-counter {
+    font-family: 'Cinzel', serif;
+    font-size: 0.68rem;
+    letter-spacing: 0.2em;
+    color: rgba(200,169,110,0.6);
+    min-width: 60px;
+    text-align: center;
+  }
+
+  /* ── Dots ── */
+  #dots {
+    position: fixed;
+    right: 2rem; top: 50%;
+    transform: translateY(-50%);
+    z-index: 100;
+    display: flex; flex-direction: column; gap: 0.55rem;
+  }
+
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: rgba(200,169,110,0.25);
+    cursor: pointer;
+    transition: background 0.25s, transform 0.25s;
+  }
+
+  .dot.active {
+    background: var(--gold);
+    transform: scale(1.4);
+  }
+
+  /* ── Logo/org bar ── */
+  #org-bar {
+    position: fixed;
+    top: 1.4rem; left: 2rem;
+    z-index: 100;
+    font-family: 'Cinzel', serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.18em;
+    color: rgba(200,169,110,0.5);
+    text-transform: uppercase;
+  }
+
+  /* ── Highlight stat ── */
+  .stat-row {
+    display: flex;
+    gap: 2.5rem;
+    margin-top: 1.8rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .stat {
+    text-align: center;
+  }
+
+  .stat-num {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2.2rem, 4vw, 3.2rem);
+    color: var(--turq);
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.62rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--sand);
+    margin-top: 0.4rem;
+    opacity: 0.8;
+  }
+
+  /* ── Quote callout ── */
+  .quote-box {
+    background: rgba(212,164,66,0.08);
+    border-left: 3px solid var(--gold);
+    border-radius: 0 4px 4px 0;
+    padding: 1.2rem 1.6rem;
+    max-width: 680px;
+    text-align: left;
+    margin-top: 1.4rem;
+    font-style: italic;
+    font-size: clamp(0.9rem, 1.5vw, 1.05rem);
+    color: var(--sand);
+    line-height: 1.75;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 700px) {
+    .two-col { grid-template-columns: 1fr; }
+    .card-grid { grid-template-columns: 1fr; }
+    #dots { display: none; }
+    h1 { font-size: 1.8rem; }
+    h2 { font-size: 1.4rem; }
+  }
+
+  /* ── Keyboard hint ── */
+  #key-hint {
+    position: fixed;
+    bottom: 5.5rem; left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Cinzel', serif;
+    font-size: 0.58rem;
+    letter-spacing: 0.15em;
+    color: rgba(200,169,110,0.35);
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<div id="org-bar">Utah Division of Water Quality · Navajo Nation · Four Corners Region</div>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDES
+════════════════════════════════════════════════════════ -->
+<div id="deck">
+
+  <!-- 0 · TITLE -->
+  <section class="slide earth active">
+    <div class="eyebrow">Utah Division of Water Quality · Nine-Element Watershed Plan</div>
+    <h1>Water, Land &amp; Sky<br>Listening Together</h1>
+    <div class="ornament"></div>
+    <p class="subtitle">Six new weather stations. A nine-element watershed plan. One shared vision — integrating community knowledge and modern monitoring to strengthen Navajo Utah's voice in water and land decisions.</p>
+    <p style="font-family:'Cinzel',serif;font-size:0.65rem;letter-spacing:0.2em;text-transform:uppercase;color:rgba(200,169,110,0.4);margin-top:2rem;">Presented to Chapter House Officials · In Partnership with USU, Navajo Utah Commission &amp; Navajo Nation Chapters</p>
+  </section>
+
+  <!-- 1 · PURPOSE -->
+  <section class="slide sky">
+    <div class="eyebrow">Why We Are Here</div>
+    <h2>The Land Has Always<br>Told Its Own Story</h2>
+    <div class="ornament"></div>
+    <p class="subtitle">The Navajo Utah Commission has unanimously approved six new weather stations across Utah Navajo communities. The Utah Division of Water Quality sees a powerful opportunity to partner with USU and the chapters — adding water quality monitoring to this network in support of the nine-element watershed plan.</p>
+    <div class="quote-box">
+      "This project gives our communities the ability to speak with data. For too long, our area has not been fully represented in state and national weather systems. This strengthens our voice in water discussions and grazing management."
+      <div style="margin-top:0.6rem;font-size:0.78rem;opacity:0.7;font-style:normal;">— Commissioner Billy Todacheenie, Navajo Utah Commission</div>
+    </div>
+  </section>
+
+  <!-- 1b · NINE-ELEMENT WATERSHED PLAN -->
+  <section class="slide earth">
+    <div class="eyebrow">Our Framework</div>
+    <h2>The Nine-Element<br>Watershed Plan</h2>
+    <div class="ornament"></div>
+    <p class="subtitle">A nine-element watershed plan is an EPA-recognized, science-based roadmap for identifying water-quality problems, their sources, and the best strategies to fix them. The six new weather stations create a unique opportunity to build that foundation here.</p>
+    <div class="card-grid">
+      <div class="card turq">
+        <span class="card-icon">🏛️</span>
+        <h3>Utah Division of Water Quality</h3>
+        <p>Leads the watershed plan — identifying impairments, setting targets, and funding water-quality projects. UDWQ hopes to explore co-locating water quality monitoring with the new station network.</p>
+      </div>
+      <div class="card gold">
+        <span class="card-icon">📡</span>
+        <h3>USU &amp; Navajo Utah Commission</h3>
+        <p>Six new weather stations — approved unanimously by the Commission — will transmit data to NOAA and national databases, filling a long-standing gap in regional climate representation.</p>
+      </div>
+      <div class="card sage">
+        <span class="card-icon">🌿</span>
+        <h3>Navajo Nation Chapters</h3>
+        <p>Chapters shaped station siting, secured land use approvals, and are coordinating with land use planning committees — ensuring the network serves community needs for the long term.</p>
+      </div>
+    </div>
+  </section>
+
+
+  <section class="slide earth">
+    <div class="eyebrow">The Challenge</div>
+    <h2>Four Corners Water<br>Is Under Pressure</h2>
+    <div class="ornament"></div>
+    <div class="card-grid">
+      <div class="card clay">
+        <span class="card-icon">🌡️</span>
+        <h3>Warming &amp; Drought</h3>
+        <p>Long-term station records confirm a strong warming trend driving higher evapotranspiration and declining river flows — a pattern Diné herders have witnessed for decades.</p>
+      </div>
+      <div class="card turq">
+        <span class="card-icon">🌩️</span>
+        <h3>Monsoon Extremes</h3>
+        <p>Intense, short monsoon bursts cause flash floods, mobilize salts and sediment, and deliver sharp pollution pulses to streams and washes.</p>
+      </div>
+      <div class="card gold">
+        <span class="card-icon">❄️</span>
+        <h3>Shrinking Snowpack</h3>
+        <p>Earlier, faster snowmelt — sped up by dust on snow and warmer air — compresses spring runoff, reducing dilution of salts and changing when clean water arrives.</p>
+      </div>
+      <div class="card sage">
+        <span class="card-icon">💧</span>
+        <h3>Springs at Risk</h3>
+        <p>Desert springs in the area, including those near Hovenweep, show rising salinity and seasonal drying during multi-year droughts — affecting both people and range livestock.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 · THE SIX STATIONS -->
+  <section class="slide sky">
+    <div class="eyebrow">The Station Network</div>
+    <h2>Six Stations. Six Communities.<br>One Shared Network.</h2>
+    <div class="ornament"></div>
+    <p class="subtitle" style="margin-bottom:1rem;">The Navajo Utah Commission approved six stations — three in Utah, three south of the state line — funded by the Walton Family Foundation, Conscience Bay, Campbell Scientific, the Utah Colorado River Authority, and the U.S. Youth Climate Center.</p>
+    <div class="card-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));">
+      <div class="card sky">
+        <span class="card-icon">📍</span>
+        <h3>Mexican Water</h3>
+        <p>Capturing localized precipitation and temperature patterns near the Utah–Arizona border.</p>
+      </div>
+      <div class="card turq">
+        <span class="card-icon">📍</span>
+        <h3>Montezuma Creek</h3>
+        <p>Monitoring a key San Juan River tributary corridor — critical for both grazing and water quality.</p>
+      </div>
+      <div class="card clay">
+        <span class="card-icon">📍</span>
+        <h3>Hwy 191 / Aneth</h3>
+        <p>Covering the Highway 191 corridor, an important agricultural and grazing zone near the San Juan.</p>
+      </div>
+      <div class="card gold">
+        <span class="card-icon">📍</span>
+        <h3>Navajo Mountain (×2)</h3>
+        <p>Two stations to capture precipitation variability across elevations — essential for snowmelt forecasting.</p>
+      </div>
+      <div class="card sage">
+        <span class="card-icon">📍</span>
+        <h3>Oljato–Monument Valley</h3>
+        <p>Sited near the cemetery for accessibility and open terrain, at chapter representatives' suggestion.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3b · WHAT STATIONS MEASURE -->
+  <section class="slide earth">
+    <div class="eyebrow">The Science Tools</div>
+    <h2>What Each Station<br>Will Measure</h2>
+    <div class="ornament"></div>
+    <p class="subtitle" style="margin-bottom:1rem;">Each station is a comprehensive environmental sensor — transmitting data to NOAA and national databases, making Navajo Utah communities visible in regional climate systems for the first time.</p>
+    <div class="card-grid">
+      <div class="card sky">
+        <span class="card-icon">🌧️</span>
+        <h3>Precipitation</h3>
+        <p>Rain and snow measured with precision — linking every monsoon storm and snowfall event to downstream flow and water-quality responses.</p>
+      </div>
+      <div class="card turq">
+        <span class="card-icon">🌡️</span>
+        <h3>Temperature &amp; Dew Point</h3>
+        <p>Air temperature and dew point track evapotranspiration stress on range and help predict water temperature in nearby streams and springs.</p>
+      </div>
+      <div class="card gold">
+        <span class="card-icon">☀️</span>
+        <h3>Solar Radiation &amp; UV</h3>
+        <p>Solar and UV data support evaporation modeling and agricultural planning, and help interpret algal bloom risk in standing water.</p>
+      </div>
+      <div class="card sage">
+        <span class="card-icon">🌱</span>
+        <h3>Soil Temperature &amp; Moisture</h3>
+        <p>Real-time soil data guides rotational grazing decisions and helps identify when soils are too dry or saturated to support healthy range recovery.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 · THREE WATER TYPES -->
+  <section class="slide earth">
+    <div class="eyebrow">Three Distinct Water Systems</div>
+    <h2>Washes, Rivers &amp; Springs —<br>Each Tells a Different Story</h2>
+    <div class="ornament"></div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Water Setting</th>
+          <th>Key Weather Driver</th>
+          <th>Main Water-Quality Concerns</th>
+          <th>Traditional Knowledge Role</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="tag wash">Ephemeral Washes</span></td>
+          <td>Monsoon storm intensity &amp; timing</td>
+          <td>Sediment pulses; short-lived spikes in metals, salts &amp; nutrients</td>
+          <td>Knowledge of which washes flood first, historic channel behavior, safe crossing points</td>
+        </tr>
+        <tr>
+          <td><span class="tag river">San Juan / Colorado</span></td>
+          <td>Snowmelt volume, drought, storm pulses</td>
+          <td>Salinity, sediment-bound metals (As, Pb, Al), low-flow concentration</td>
+          <td>Seasonal patterns, historic high-water marks, land-use memory upstream</td>
+        </tr>
+        <tr>
+          <td><span class="tag spring">Springs &amp; Seeps</span></td>
+          <td>Multi-year recharge vs. drought cycles</td>
+          <td>Flow persistence, salinity, localized contamination from land use</td>
+          <td>Precise locations, ceremonial &amp; livestock significance, long-term flow memory</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 5 · TRADITIONAL KNOWLEDGE + SCIENCE -->
+  <section class="slide sage">
+    <div class="eyebrow">Holistic Approach</div>
+    <h2>Two Ways of Knowing —<br>Stronger Together</h2>
+    <div class="ornament"></div>
+    <div class="two-col">
+      <div class="col-panel traditional">
+        <div class="col-head">🌿 Diné Traditional Knowledge</div>
+        <ul>
+          <li>Generations of observation of seasonal water availability</li>
+          <li>Knowledge of which plants indicate groundwater health</li>
+          <li>Memory of how range condition tracks rainfall and grazing cycles</li>
+          <li>Understanding of soil crust, erosion, and recovery patterns</li>
+          <li>Identification of historically healthy springs and seeps</li>
+          <li>Oral records of drought, flood, and climate cycles over lifetimes</li>
+        </ul>
+      </div>
+      <div class="col-panel science">
+        <div class="col-head">📡 Weather Station Science</div>
+        <ul>
+          <li>Continuous, time-stamped rainfall and temperature data</li>
+          <li>Real-time alerts when storm thresholds are exceeded</li>
+          <li>Precise water chemistry measurements across seasons</li>
+          <li>Long-term trend detection for warming and salinity change</li>
+          <li>Models that forecast runoff, erosion, and contamination risk</li>
+          <li>Shared data accessible to managers, agencies, and communities</li>
+        </ul>
+      </div>
+    </div>
+    <p class="body-text" style="margin-top:1.4rem;font-style:italic;">Neither approach alone is sufficient. Together they create a monitoring system with both deep historical roots and real-time precision.</p>
+  </section>
+
+  <!-- 6 · REGENERATIVE AGRICULTURE LINK -->
+  <section class="slide earth">
+    <div class="eyebrow">Nine-Element Watershed Plan</div>
+    <h2>Supporting Regenerative<br>Agriculture on Navajo Land</h2>
+    <div class="ornament"></div>
+    <p class="subtitle">Water-quality data gathered through the watershed plan — together with USU's weather stations and chapter input — will directly support projects that promote healthier soils, better grazing decisions, and more resilient food systems.</p>
+    <div class="card-grid">
+      <div class="card gold">
+        <span class="card-icon">🐄</span>
+        <h3>Grazing Management</h3>
+        <p>Real-time soil moisture and range condition data — combined with traditional knowledge of grazing cycles — help time rotational grazing to protect soils and forage recovery.</p>
+      </div>
+      <div class="card sage">
+        <span class="card-icon">🌱</span>
+        <h3>Soil Health</h3>
+        <p>Linking rainfall data with soil crust monitoring shows which areas are most vulnerable to erosion after monsoon flash floods and where restoration efforts are most needed.</p>
+      </div>
+      <div class="card turq">
+        <span class="card-icon">🚰</span>
+        <h3>Water Access &amp; Safety</h3>
+        <p>Knowing when springs are most stressed, or when wash water is contaminated after a monsoon, helps families and livestock avoid poor-quality water at the most critical times.</p>
+      </div>
+      <div class="card clay">
+        <span class="card-icon">📅</span>
+        <h3>Seasonal Planning</h3>
+        <p>Long-term climate trends combined with traditional seasonal knowledge help chapters plan for droughts, adjust herd sizes, and protect infrastructure before extreme events.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 · HOW MONITORING WORKS -->
+  <section class="slide sky">
+    <div class="eyebrow">Monitoring Design</div>
+    <h2>How the Station Network<br>Works in Practice</h2>
+    <div class="ornament"></div>
+    <div class="card-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px,1fr));">
+      <div class="card sky">
+        <span class="card-icon">📍</span>
+        <h3>Co-Located Instruments</h3>
+        <p>Rain and temperature gauges are placed alongside automatic loggers in washes and at river gauges — so every storm is matched to the exact water-quality response it triggers.</p>
+      </div>
+      <div class="card turq">
+        <span class="card-icon">⚠️</span>
+        <h3>Storm-Event Flagging</h3>
+        <p>Weather data automatically flags storm events, alerting field crews when to prioritize water sampling in washes and main-stem rivers to capture contamination pulses.</p>
+      </div>
+      <div class="card gold">
+        <span class="card-icon">📊</span>
+        <h3>Hydrologic Context</h3>
+        <p>Every water sample is tagged as "baseflow," "snowmelt," or "monsoon" — a framework that mirrors how traditional knowledge has always understood seasonal water differences.</p>
+      </div>
+      <div class="card sage">
+        <span class="card-icon">🌿</span>
+        <h3>Spring Monitoring</h3>
+        <p>Springs are checked at climate markers — end of dry season, after wet winters, after multi-year drought — rather than at arbitrary calendar dates, matching the land's actual rhythms.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 · COMMUNITY ROLE -->
+  <section class="slide sage">
+    <div class="eyebrow">Your Chapter's Role</div>
+    <h2>Chapters as Partners,<br>Not Just Host Sites</h2>
+    <div class="ornament"></div>
+    <p class="subtitle">Chapters shaped this initiative from the start — suggesting station sites, coordinating land use approvals, and voicing what data matters most. That partnership is exactly what makes it meaningful.</p>
+    <div class="stat-row">
+      <div class="stat">
+        <div class="stat-num">6</div>
+        <div class="stat-label">New Weather Stations<br>Unanimously Approved</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">6–0</div>
+        <div class="stat-label">Commission Vote<br>in Favor</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">∞</div>
+        <div class="stat-label">Generations of<br>Traditional Knowledge</div>
+      </div>
+    </div>
+    <div class="quote-box" style="margin-top:1.8rem;">
+      "The stations will support local grazing permit holders by providing measurable environmental indicators to guide conservation planning and adaptive management strategies."
+      <div style="margin-top:0.6rem;font-size:0.78rem;opacity:0.7;font-style:normal;">— Council Delegate Curtis Yanito</div>
+    </div>
+  </section>
+
+  <!-- 8b · UDWQ WATER QUALITY OPPORTUNITY -->
+  <section class="slide sky">
+    <div class="eyebrow">An Emerging Opportunity</div>
+    <h2>Water Quality Monitoring —<br>A Natural Next Step</h2>
+    <div class="ornament"></div>
+    <p class="subtitle">The six weather stations were designed for weather and grazing data — but UDWQ believes they represent a rare opportunity to add water quality monitoring that could transform the nine-element watershed plan.</p>
+    <div class="card-grid">
+      <div class="card turq">
+        <span class="card-icon">🔗</span>
+        <h3>Co-Located Sampling</h3>
+        <p>Water quality sensors or sampling programs placed near station sites would link every precipitation event directly to a measurable water-quality response — the gold standard for watershed science.</p>
+      </div>
+      <div class="card gold">
+        <span class="card-icon">📊</span>
+        <h3>Storm-Event Context</h3>
+        <p>The stations' real-time rainfall data would let UDWQ trigger targeted water sampling after monsoon events — capturing contamination pulses in washes and streams that are otherwise missed.</p>
+      </div>
+      <div class="card sage">
+        <span class="card-icon">📡</span>
+        <h3>NOAA Data Integration</h3>
+        <p>Station data flowing to NOAA's national databases creates a shared platform where weather and water quality records can be analyzed together — strengthening the case for watershed plan projects.</p>
+      </div>
+      <div class="card clay">
+        <span class="card-icon">💬</span>
+        <h3>Community-Driven Priorities</h3>
+        <p>UDWQ is not arriving with a pre-set monitoring plan — we want to hear from chapters about which waters matter most, what concerns exist, and how water quality data can best serve local needs.</p>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- 9 · NEXT STEPS -->
+  <section class="slide earth">
+    <div class="eyebrow">Moving Forward Together</div>
+    <h2>Building the Watershed Plan<br>Together</h2>
+    <div class="ornament"></div>
+    <div class="card-grid">
+      <div class="card gold">
+        <span class="card-icon">🤝</span>
+        <h3>Land Use Coordination</h3>
+        <p>Chapters and land use planning committees are already engaged on station siting. UDWQ wants to be part of that conversation — exploring where water quality monitoring fits alongside each station.</p>
+      </div>
+      <div class="card turq">
+        <span class="card-icon">📋</span>
+        <h3>Watershed Plan Input</h3>
+        <p>The Division of Water Quality invites chapter input on which waters are most at risk, what contamination concerns exist, and how the nine-element plan can best support community priorities.</p>
+      </div>
+      <div class="card sage">
+        <span class="card-icon">🎓</span>
+        <h3>Training &amp; Capacity</h3>
+        <p>Community members can be trained alongside USU researchers to read station data, contribute observations, and participate in field monitoring that feeds directly into the watershed plan.</p>
+      </div>
+      <div class="card clay">
+        <span class="card-icon">📜</span>
+        <h3>Traditional Knowledge Protocol</h3>
+        <p>UDWQ and USU commit to a formal protocol ensuring that traditional ecological knowledge shared in this partnership is respected, protected, and attributed appropriately.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 · CLOSING -->
+  <section class="slide sky">
+    <div class="eyebrow">Closing</div>
+    <h1>Hózhó Nahasdlíí'</h1>
+    <div class="ornament"></div>
+    <p class="subtitle">Beauty and balance are restored — when we listen to the land with all the tools we have, old and new, together.</p>
+    <p class="body-text" style="margin-top:1.2rem;">The Utah Division of Water Quality thanks the chapter for your partnership, your knowledge, and your stewardship of this land. Your observations and questions are essential data for the watershed plan.</p>
+    <p style="margin-top:2rem;font-family:'Cinzel',serif;font-size:0.65rem;letter-spacing:0.2em;color:rgba(200,169,110,0.5);text-transform:uppercase;">Utah Division of Water Quality · Nine-Element Watershed Plan · In Partnership with USU &amp; Navajo Nation Chapters</p>
+  </section>
+
+</div><!-- /deck -->
+
+<!-- ── Navigation ── -->
+<div id="nav">
+  <button class="nav-btn" id="prev-btn" disabled>← Prev</button>
+  <span id="slide-counter">1 / 14</span>
+  <button class="nav-btn" id="next-btn">Next →</button>
+</div>
+
+<div id="dots"></div>
+
+<div id="key-hint">← → Arrow keys or click to navigate</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const prevBtn = document.getElementById('prev-btn');
+  const nextBtn = document.getElementById('next-btn');
+  const counter = document.getElementById('slide-counter');
+  const dotsContainer = document.getElementById('dots');
+  let current = 0;
+
+  // Build dots
+  slides.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.addEventListener('click', () => goTo(i));
+    dotsContainer.appendChild(d);
+  });
+
+  const dots = document.querySelectorAll('.dot');
+
+  function goTo(n) {
+    slides[current].classList.remove('active');
+    dots[current].classList.remove('active');
+    current = Math.max(0, Math.min(n, slides.length - 1));
+    slides[current].classList.add('active');
+    dots[current].classList.add('active');
+    counter.textContent = `${current + 1} / ${slides.length}`;
+    prevBtn.disabled = current === 0;
+    nextBtn.disabled = current === slides.length - 1;
+  }
+
+  prevBtn.addEventListener('click', () => goTo(current - 1));
+  nextBtn.addEventListener('click', () => goTo(current + 1));
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') goTo(current + 1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   goTo(current - 1);
+  });
+
+  // Touch/swipe support
+  let touchStartX = 0;
+  document.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; });
+  document.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 50) dx < 0 ? goTo(current + 1) : goTo(current - 1);
+  });
+</script>
+
+</body>
+</html>
